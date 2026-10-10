@@ -5,10 +5,10 @@ import argparse
 import csv
 import math
 
-import matplotlib
-
-matplotlib.use("Agg")
-import matplotlib.pyplot as plt
+from plot_task1 import (
+    PAGE_WIDTH, PLOT_LEFT, PLOT_RIGHT, PLOT_BOTTOM, PLOT_TOP,
+    nice_step, pdf_text, text_width, write_pdf,
+)
 
 
 def read_timings(filename, mode):
@@ -43,28 +43,62 @@ def main():
         parser.error("The threads plot requires the selected threshold.")
 
     timings = read_timings(args.timings, args.mode)
-    values, times = zip(*timings)
-    fig, ax = plt.subplots(figsize=(8, 5), layout="constrained")
-    ax.plot(values, times, marker="o")
-    ax.set_ylabel("msort time (ms)")
-    ax.set_ylim(bottom=0)
-    ax.grid(True, alpha=0.3)
-    if args.mode == "threshold":
-        best, best_time = min(timings, key=lambda item: (item[1], item[0]))
-        # Time is linear; threshold is logarithmic, with powers-of-two ticks.
-        ax.set_xscale("log", base=2)
-        ax.set_xticks(values, [str(value) for value in values])
-        ax.set_xlabel("Threshold (ts, logarithmic scale)")
-        ax.set_title("Merge sort: n = 1,000,000, t = 8")
-        ax.scatter([best], [best_time], color="tab:red", zorder=3,
-                   label=f"Best ts = {best} ({best_time:.3g} ms)")
-        ax.legend()
-    else:
-        ax.set_xticks(values)
-        ax.set_xlabel("OpenMP threads (t)")
-        ax.set_title(f"Merge sort: n = 1,000,000, ts = {args.best_threshold}")
-    fig.savefig(args.output)
-    plt.close(fig)
+    threshold_mode = args.mode == "threshold"
+    best, best_time = min(timings, key=lambda item: (item[1], item[0]))
+    title = ("Merge sort: n = 1,000,000, t = 8" if threshold_mode else
+             f"Merge sort: n = 1,000,000, ts = {args.best_threshold}")
+    x_label = ("Threshold (ts, logarithmic scale)" if threshold_mode else
+               "OpenMP threads (t)")
+    y_max = max(time for _, time in timings)
+    step = nice_step(1.05 * y_max if y_max else 1.0)
+    y_max = math.ceil((1.05 * y_max if y_max else 1.0) / step) * step
+
+    def x_coordinate(value):
+        fraction = (math.log2(value) - 1) / 9 if threshold_mode else (value - 1) / 19
+        return PLOT_LEFT + fraction * (PLOT_RIGHT - PLOT_LEFT)
+
+    def y_coordinate(value):
+        return PLOT_BOTTOM + value / y_max * (PLOT_TOP - PLOT_BOTTOM)
+
+    commands = ["0 0 0 rg", "0.5 w"]
+    for tick in range(int(round(y_max / step)) + 1):
+        value = tick * step
+        y = y_coordinate(value)
+        label = f"{value:.3g}"
+        commands.extend([
+            "0.85 0.85 0.85 RG",
+            f"{PLOT_LEFT} {y:.2f} m {PLOT_RIGHT} {y:.2f} l S",
+            pdf_text(PLOT_LEFT - 12 - text_width(label, 8), y - 3, label, 8),
+        ])
+    for value, _ in timings:
+        x = x_coordinate(value)
+        label = str(value)
+        commands.extend([
+            "0.9 0.9 0.9 RG",
+            f"{x:.2f} {PLOT_BOTTOM} m {x:.2f} {PLOT_TOP} l S",
+            pdf_text(x - text_width(label, 8) / 2, PLOT_BOTTOM - 17, label, 8),
+        ])
+    commands.extend([
+        "0 0 0 RG", "1 w",
+        f"{PLOT_LEFT} {PLOT_TOP} m {PLOT_LEFT} {PLOT_BOTTOM} l {PLOT_RIGHT} {PLOT_BOTTOM} l S",
+        pdf_text((PAGE_WIDTH - text_width(title, 16)) / 2, 567, title, 16),
+        pdf_text((PAGE_WIDTH - text_width(x_label, 11)) / 2, 35, x_label, 11),
+        pdf_text(28, 250, "msort time (ms)", 11, 90),
+        "0.12 0.47 0.71 RG", "1.5 w",
+    ])
+    points = [(x_coordinate(value), y_coordinate(time)) for value, time in timings]
+    commands.append(f"{points[0][0]:.2f} {points[0][1]:.2f} m")
+    commands.extend(f"{x:.2f} {y:.2f} l" for x, y in points[1:])
+    commands.extend(["S", "0.12 0.47 0.71 rg"])
+    commands.extend(f"{x-2:.2f} {y-2:.2f} 4 4 re f" for x, y in points)
+    if threshold_mode:
+        x, y = x_coordinate(best), y_coordinate(best_time)
+        commands.extend([
+            "0.8 0.15 0.1 rg",
+            f"{x-3:.2f} {y-3:.2f} 6 6 re f",
+            pdf_text(PLOT_LEFT, 540, f"Best ts = {best} ({best_time:.3g} ms)", 10),
+        ])
+    write_pdf(args.output, commands)
     if args.mode == "threshold":
         print(best)
 

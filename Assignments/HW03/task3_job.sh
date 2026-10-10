@@ -12,8 +12,8 @@ set -euo pipefail
 cd "$SLURM_SUBMIT_DIR"
 
 g++ task3.cpp msort.cpp -Wall -O3 -std=c++17 -o task3 -fopenmp
-# Check plotting dependencies before spending time on the sweeps.
-python3 -c 'import matplotlib'
+# Check the dependency-free plotting helper before running the sweeps.
+python3 -c 'import plot_task3'
 
 export OMP_DYNAMIC=FALSE
 export OMP_PLACES=cores
