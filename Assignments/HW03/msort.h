@@ -7,7 +7,7 @@
 // This function does a merge sort on the input array "arr" of length n. 
 // You can add more functions as needed to complete the merge sort,
 // but do not change this file. Declare and define your addtional
-// functions in the msort.cpp file, but the calls to your addtional functions
+// functions in the msort.cpp file, but the calls to your additional functions
 // should be wrapped in the "msort" function.
 
 // "threshold" is the lower limit of array size where your function would 
