@@ -157,7 +157,7 @@ int main(int argc, char *argv[]) {
             }
         }
 
-        // TODO: Drift
+        // Drift
         for (int i = 0; i < N; i++) {
             for (int axis = 0; axis < 3; axis++) {
                 pos[i][axis] += vel[i][axis] * dt;
