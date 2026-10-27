@@ -18,9 +18,27 @@ const double board_size = 4.0; // Size of the board
 
 // Function to calculate acceleration due to gravity
 void getAcc(const double pos[][3], const double mass[], double acc[][3], int N) {
+    for (int i = 0; i < N; i++) {
+        acc[i][0] = 0.0;
+        acc[i][1] = 0.0;
+        acc[i][2] = 0.0;
 
-    // TODO:
+        for (int j = 0; j < N; j++) {
+            if (i == j) {
+                continue;
+            }
 
+            const double dx = pos[j][0] - pos[i][0];
+            const double dy = pos[j][1] - pos[i][1];
+            const double dz = pos[j][2] - pos[i][2];
+            const double distance_squared = dx * dx + dy * dy + dz * dz + softening * softening;
+            const double inverse_distance_cubed = 1.0 / (distance_squared * std::sqrt(distance_squared));
+
+            acc[i][0] += G * dx * inverse_distance_cubed * mass[j];
+            acc[i][1] += G * dy * inverse_distance_cubed * mass[j];
+            acc[i][2] += G * dz * inverse_distance_cubed * mass[j];
+        }
+    }
 }
 
 // For debug: save positions to a CSV file
@@ -60,6 +78,11 @@ int main(int argc, char *argv[]) {
     // Read N and tEnd from command line
     int N = std::stoi(argv[1]);     // Number of particles
     double tEnd = std::stod(argv[2]); // Time at which simulation ends
+
+    if (N <= 0 || !std::isfinite(tEnd) || tEnd < 0.0) {
+        std::cerr << "Number of particles must be positive and simulation end time must be finite and non-negative." << std::endl;
+        return 1;
+    }
 
     // File to save positions
     std::string filename = "positions.csv";
@@ -126,19 +149,41 @@ int main(int argc, char *argv[]) {
 
     // Main simulation loop
     for (int step = 0; step < Nt; step++) {
-        
-        // TODO: (1/2) kick
 
+        // (1/2) kick
+        for (int i = 0; i < N; i++) {
+            for (int axis = 0; axis < 3; axis++) {
+                vel[i][axis] += acc[i][axis] * dt / 2.0;
+            }
+        }
 
         // TODO: Drift
-      
+        for (int i = 0; i < N; i++) {
+            for (int axis = 0; axis < 3; axis++) {
+                pos[i][axis] += vel[i][axis] * dt;
+            }
+        }
 
-        // TODO: Ensure particles stay within the board limits
+        // Ensure particles stay within the board limits
+        for (int i = 0; i < N; i++) {
+            for (int axis = 0; axis < 3; axis++) {
+                if (pos[i][axis] > board_size) {
+                    pos[i][axis] = board_size;
+                } else if (pos[i][axis] < -board_size) {
+                    pos[i][axis] = -board_size;
+                }
+            }
+        }
 
         // Update accelerations
         getAcc(pos, mass, acc, N);
 
-        // TODO: (1/2) kick
+        // (1/2) kick
+        for (int i = 0; i < N; i++) {
+            for (int axis = 0; axis < 3; axis++) {
+                vel[i][axis] += acc[i][axis] * dt / 2.0;
+            }
+        }
 
         // Update time
         t += dt;
