@@ -7,6 +7,10 @@
 #include <stdexcept>
 #include <string>
 
+#ifndef THREADS_PER_BLOCK
+#define THREADS_PER_BLOCK 512
+#endif
+
 int main(int argc, char *argv[]) {
     if (argc != 2) {
         std::cerr << "Usage: " << argv[0] << " <positive n>\n";
@@ -47,7 +51,7 @@ int main(int argc, char *argv[]) {
     cudaMemcpy(dA, a, n * sizeof(float), cudaMemcpyHostToDevice);
     cudaMemcpy(dB, b, n * sizeof(float), cudaMemcpyHostToDevice);
 
-    const unsigned int threads_per_block = 512;
+    const unsigned int threads_per_block = THREADS_PER_BLOCK;
     const unsigned int blocks =
         (static_cast<unsigned int>(n) + threads_per_block - 1) / threads_per_block;
 
