@@ -26,7 +26,10 @@ int main() {
     cudaMemcpy(hA, dA, n * sizeof(int), cudaMemcpyDeviceToHost);
 
     for (int i = 0; i < n; ++i) {
-        std::printf("%d ", hA[i]);
+        if (i > 0) {
+            std::printf(" ");
+        }
+        std::printf("%d", hA[i]);
     }
     std::printf("\n");
 
