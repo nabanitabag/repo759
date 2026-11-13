@@ -2,7 +2,7 @@
 
 #SBATCH -p instruction
 #SBATCH -t 0-00:05:00
-#SBATCH --gpus-per-task=1 -c 1
+#SBATCH --ntasks=1 --gpus-per-task=1 -c 1
 #SBATCH --mem=1G
 #SBATCH -J hw05-task2
 #SBATCH -o task2-%j.out
