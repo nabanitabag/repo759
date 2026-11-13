@@ -1,5 +1,6 @@
 #include "vscale.cuh"
 
+#include <cmath>
 #include <cstddef>
 #include <iostream>
 #include <limits>
@@ -36,8 +37,10 @@ int main(int argc, char *argv[]) {
     float *b = new float[n];
 
     std::mt19937 generator(std::random_device{}());
-    std::uniform_real_distribution<float> distribution_a(-10.0f, 10.0f);
-    std::uniform_real_distribution<float> distribution_b(0.0f, 1.0f);
+    std::uniform_real_distribution<float> distribution_a(
+        -10.0f, std::nextafter(10.0f, std::numeric_limits<float>::max()));
+    std::uniform_real_distribution<float> distribution_b(
+        0.0f, std::nextafter(1.0f, std::numeric_limits<float>::max()));
 
     for (std::size_t i = 0; i < n; ++i) {
         a[i] = distribution_a(generator);
