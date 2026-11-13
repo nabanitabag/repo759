@@ -2,7 +2,7 @@
 
 #SBATCH -p instruction
 #SBATCH -t 0-00:30:00
-#SBATCH --cpus-per-task=4
+#SBATCH --cpus-per-task=8
 #SBATCH --mem=2G
 #SBATCH -J hw04-task3
 #SBATCH -o task3-%j.out
