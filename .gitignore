@@ -1,17 +1,7 @@
 .DS_Store
 
-/Assignments/HW02/task1
-/Assignments/HW02/task2
-/Assignments/HW02/task3
-
-/Assignments/HW05/task1
-/Assignments/HW05/task2
-/Assignments/HW05/task3
-/Assignments/HW05/task3_16
-/Assignments/HW05/*.out
-/Assignments/HW05/*.err
-
-/Assignments/HW06/task1
-/Assignments/HW06/task2
-/Assignments/HW06/*.out
-/Assignments/HW06/*.err
+# Compiled executables (task1, task3_16, ...) and Slurm job logs
+/Assignments/*/task[0-9]
+/Assignments/*/task[0-9]_[0-9]*
+/Assignments/*/*.out
+/Assignments/*/*.err
