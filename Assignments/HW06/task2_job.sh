@@ -16,6 +16,9 @@ module load nvidia/cuda
 nvcc task2.cu stencil.cu -Xcompiler -O3 -Xcompiler -Wall -Xptxas -O3 -std=c++17 -o task2
 
 R=128
+# Untimed warm-up so one-time GPU startup cost doesn't land on the first data point.
+./task2 1024 "$R" 1024 > /dev/null
+
 printf 'threads_per_block\tn\ttime_ms\n' > task2_times.tsv
 for threads_per_block in 1024 512; do
     for exponent in {10..29}; do
