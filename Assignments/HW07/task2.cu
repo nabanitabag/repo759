@@ -50,6 +50,10 @@ int main(int argc, char *argv[]) {
     cudaMalloc((void **)&d_output, first_pass_blocks * sizeof(float));
     cudaMemcpy(d_input, values.data(), N * sizeof(float), cudaMemcpyHostToDevice);
 
+    // Untimed empty launch (n = 0 reads no input) so the one-time kernel load isn't measured.
+    reduce_kernel<<<1, threads_per_block, threads_per_block * sizeof(float)>>>(d_input, d_output, 0);
+    cudaDeviceSynchronize();
+
     cudaEvent_t start, stop;
     cudaEventCreate(&start);
     cudaEventCreate(&stop);

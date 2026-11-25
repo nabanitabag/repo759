@@ -43,6 +43,9 @@ static void run(void (*matmul)(const T *, const T *, T *, unsigned int, unsigned
     cudaMemcpy(dA, A.data(), bytes, cudaMemcpyHostToDevice);
     cudaMemcpy(dB, B.data(), bytes, cudaMemcpyHostToDevice);
 
+    // Untimed 1x1 launch so the one-time kernel load isn't counted in the measurement.
+    matmul(dA, dB, dC, 1, block_dim);
+
     cudaEvent_t start, stop;
     cudaEventCreate(&start);
     cudaEventCreate(&stop);
