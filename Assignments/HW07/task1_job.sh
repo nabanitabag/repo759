@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 #SBATCH -p instruction
-#SBATCH -t 0-01:00:00
+#SBATCH -t 0-00:45:00
 #SBATCH --ntasks=1 --gpus-per-task=1 -c 1
 #SBATCH --mem=8G
 #SBATCH -J hw07-task1
