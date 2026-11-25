@@ -20,50 +20,55 @@ static unsigned int parse_positive(const char *arg) {
 
 template <typename T>
 static void run(void (*matmul)(const T *, const T *, T *, unsigned int, unsigned int),
-                const std::vector<int> &a_values, const std::vector<int> &b_values, unsigned int n,
-                unsigned int block_dim) {
+                unsigned int seed, unsigned int n, unsigned int block_dim) {
     const std::size_t size = static_cast<std::size_t>(n) * n;
     const std::size_t bytes = size * sizeof(T);
-    T *A;
-    T *B;
-    T *C;
-    cudaMallocManaged((void **)&A, bytes);
-    cudaMallocManaged((void **)&B, bytes);
-    cudaMallocManaged((void **)&C, bytes);
+
+    // Same seed for every type, so int, float, and double multiply identical matrices.
+    std::vector<T> A(size);
+    std::vector<T> B(size);
+    std::mt19937 generator(seed);
+    std::uniform_int_distribution<int> distribution(-10, 10);
     for (std::size_t i = 0; i < size; ++i) {
-        A[i] = static_cast<T>(a_values[i]);
-        B[i] = static_cast<T>(b_values[i]);
+        A[i] = static_cast<T>(distribution(generator));
+        B[i] = static_cast<T>(distribution(generator));
     }
 
-    // Move the data to the GPU first so page migration isn't counted as matmul time.
-    int device;
-    cudaGetDevice(&device);
-    cudaMemPrefetchAsync(A, bytes, device);
-    cudaMemPrefetchAsync(B, bytes, device);
-    cudaMemPrefetchAsync(C, bytes, device);
-    cudaDeviceSynchronize();
+    T *dA;
+    T *dB;
+    T *dC;
+    cudaMalloc((void **)&dA, bytes);
+    cudaMalloc((void **)&dB, bytes);
+    cudaMalloc((void **)&dC, bytes);
+    cudaMemcpy(dA, A.data(), bytes, cudaMemcpyHostToDevice);
+    cudaMemcpy(dB, B.data(), bytes, cudaMemcpyHostToDevice);
 
     cudaEvent_t start, stop;
     cudaEventCreate(&start);
     cudaEventCreate(&stop);
 
     cudaEventRecord(start);
-    matmul(A, B, C, n, block_dim);
+    matmul(dA, dB, dC, n, block_dim);
     cudaEventRecord(stop);
     cudaEventSynchronize(stop);
 
     float elapsed_ms = 0.0f;
     cudaEventElapsedTime(&elapsed_ms, start, stop);
 
-    std::cout << C[0] << '\n';
-    std::cout << C[size - 1] << '\n';
+    T first;
+    T last;
+    cudaMemcpy(&first, dC, sizeof(T), cudaMemcpyDeviceToHost);
+    cudaMemcpy(&last, dC + size - 1, sizeof(T), cudaMemcpyDeviceToHost);
+
+    std::cout << first << '\n';
+    std::cout << last << '\n';
     std::cout << elapsed_ms << '\n';
 
     cudaEventDestroy(start);
     cudaEventDestroy(stop);
-    cudaFree(A);
-    cudaFree(B);
-    cudaFree(C);
+    cudaFree(dA);
+    cudaFree(dB);
+    cudaFree(dC);
 }
 
 int main(int argc, char *argv[]) {
@@ -86,18 +91,9 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    const std::size_t size = static_cast<std::size_t>(n) * n;
-    std::vector<int> a_values(size);
-    std::vector<int> b_values(size);
-    std::mt19937 generator(std::random_device{}());
-    std::uniform_int_distribution<int> distribution(-10, 10);
-    for (std::size_t i = 0; i < size; ++i) {
-        a_values[i] = distribution(generator);
-        b_values[i] = distribution(generator);
-    }
-
-    run<int>(matmul_1, a_values, b_values, n, block_dim);
-    run<float>(matmul_2, a_values, b_values, n, block_dim);
-    run<double>(matmul_3, a_values, b_values, n, block_dim);
+    const unsigned int seed = std::random_device{}();
+    run<int>(matmul_1, seed, n, block_dim);
+    run<float>(matmul_2, seed, n, block_dim);
+    run<double>(matmul_3, seed, n, block_dim);
     return 0;
 }
